@@ -103,10 +103,10 @@ class VelocidroneClient:
             if ws is None:
                 try:
                     socket_url = f"ws://{machine_ip}:60003/velocidrone"
-                    socket = create_connection(socket_url, timeout=2)
-                    socket.settimeout(0.25)
+                    ws_conn = create_connection(socket_url, timeout=2)
+                    ws_conn.settimeout(0.25)
                     with self._lock:
-                        self._ws = socket
+                        self._ws = ws_conn
                         self._connected = True
                         self._last_error = ""
                     last_ping_ts = 0.0
