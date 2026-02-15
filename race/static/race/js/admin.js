@@ -87,12 +87,7 @@ async function saveIp() {
 }
 
 async function sendAction(action, extraPayload = {}) {
-    const numberValue = document.getElementById('cameraNumber').value.trim();
-
     const requestPayload = { action, ...extraPayload };
-    if (numberValue !== '') {
-        requestPayload.number = Number(numberValue);
-    }
 
     const response = await fetch('/race/api/action/', {
         method: 'POST',
@@ -122,6 +117,11 @@ function bindEvents() {
     document.querySelectorAll('button[data-action]').forEach((button) => {
         button.addEventListener('click', () => {
             const action = button.getAttribute('data-action');
+            const cameraNumber = button.getAttribute('data-camera-number');
+            if (cameraNumber) {
+                sendAction(action, { number: Number(cameraNumber) });
+                return;
+            }
             sendAction(action);
         });
     });
