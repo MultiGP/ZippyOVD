@@ -1,27 +1,28 @@
-function setPilotOptions(players) {
-    const select = document.getElementById('pilotUid');
-    const current = select.value;
-    select.innerHTML = '';
+function setPilotButtons(players) {
+    const container = document.getElementById('pilotCameraButtons');
+    container.innerHTML = '';
 
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = 'Select pilot UID';
-    select.appendChild(placeholder);
-
-    (players || []).forEach((player) => {
-        if (!player.uid) {
-            return;
-        }
-
-        const option = document.createElement('option');
-        option.value = String(player.uid);
-        option.textContent = `${player.name} (UID ${player.uid})`;
-        select.appendChild(option);
+    const validPlayers = (players || []).filter((player) => {
+        return Boolean(player.uid);
     });
 
-    if (current) {
-        select.value = current;
+    if (!validPlayers.length) {
+        const empty = document.createElement('span');
+        empty.className = 'muted';
+        empty.textContent = 'No pilots available yet.';
+        container.appendChild(empty);
+        return;
     }
+
+    validPlayers.forEach((player) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = `${player.name} (UID ${player.uid})`;
+        button.addEventListener('click', () => {
+            sendAction('camera_player', { uid: Number(player.uid) });
+        });
+        container.appendChild(button);
+    });
 }
 
 let suppressIpRefreshUntil = 0;
@@ -49,7 +50,7 @@ async function fetchConfig() {
 
     const stateResponse = await fetch('/race/api/state/');
     const stateData = await stateResponse.json();
-    setPilotOptions(stateData.players || []);
+    setPilotButtons(stateData.players || []);
 }
 
 async function saveIp() {
@@ -80,14 +81,10 @@ async function saveIp() {
     }
 }
 
-async function sendAction(action) {
-    const uidValue = document.getElementById('pilotUid').value.trim();
+async function sendAction(action, extraPayload = {}) {
     const numberValue = document.getElementById('cameraNumber').value.trim();
 
-    const requestPayload = { action };
-    if (uidValue !== '') {
-        requestPayload.uid = Number(uidValue);
-    }
+    const requestPayload = { action, ...extraPayload };
     if (numberValue !== '') {
         requestPayload.number = Number(numberValue);
     }
