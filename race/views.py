@@ -5,7 +5,15 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
-from .state import get_machine_ip, get_payload, normalize_state, set_machine_ip, set_payload
+from .state import (
+    get_current_state,
+    get_machine_ip,
+    get_payload,
+    normalize_state,
+    set_machine_ip,
+    set_payload,
+)
+from .velocidrone import client
 
 
 def home(request: HttpRequest) -> HttpResponse:
@@ -22,12 +30,20 @@ def race_bug(request: HttpRequest) -> HttpResponse:
 
 def api_config(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
-        return JsonResponse({"machineIp": get_machine_ip()})
+        status = client.status()
+        return JsonResponse(
+            {
+                "machineIp": get_machine_ip(),
+                "wsConnected": status.get("connected", False),
+                "wsLastError": status.get("lastError", ""),
+            }
+        )
 
     if request.method == "POST":
         data = _json_body(request)
         machine_ip = str(data.get("machineIp", "")).strip()
         set_machine_ip(machine_ip)
+        client.configure(machine_ip)
         return JsonResponse({"ok": True, "machineIp": machine_ip})
 
     return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -39,18 +55,22 @@ def api_action(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     data = _json_body(request)
-    action = data.get("action", "")
-    pilot = data.get("pilot", None)
+    action = str(data.get("action", "")).strip()
+    uid = _to_int_or_none(data.get("uid", None))
+    camera_number = _to_int_or_none(data.get("number", None))
 
-    # TODO: Implement actual websocket command relay to Velocidrone.
+    payload = _build_command(action, uid, camera_number)
+    if payload is None:
+        return JsonResponse({"error": f"Unsupported action: {action}"}, status=400)
+
+    queued = client.send_command(payload)
     return JsonResponse(
         {
             "ok": True,
-            "queued": True,
+            "queued": queued,
             "action": action,
-            "pilot": pilot,
+            "payload": payload,
             "machineIp": get_machine_ip(),
-            "note": "Command relay stubbed in initial scaffold.",
         }
     )
 
@@ -67,8 +87,27 @@ def api_telemetry(request: HttpRequest) -> JsonResponse:
 
 
 def api_state(request: HttpRequest) -> JsonResponse:
-    payload = get_payload()
-    return JsonResponse(normalize_state(payload))
+    ws_state = get_current_state()
+    fallback_state = normalize_state(get_payload())
+    status = client.status()
+
+    if ws_state.get("players"):
+        merged = ws_state
+    else:
+        merged = {
+            "players": fallback_state.get("players", []),
+            "teamScores": fallback_state.get("teamScores", {}),
+            "raw": {},
+        }
+
+    merged["ws"] = {
+        "connected": status.get("connected", False),
+        "lastError": status.get("lastError", ""),
+        "lastMessageTs": status.get("lastMessageTs", 0),
+        "machineIp": status.get("machineIp", ""),
+    }
+
+    return JsonResponse(merged)
 
 
 def _json_body(request: HttpRequest) -> dict[str, Any]:
@@ -82,3 +121,36 @@ def _json_body(request: HttpRequest) -> dict[str, Any]:
     except (json.JSONDecodeError, UnicodeDecodeError):
         pass
     return {}
+
+
+def _build_command(action: str, uid: int | None, camera_number: int | None) -> dict[str, Any] | None:
+    if action == "start_race":
+        return {"command": "startrace"}
+    if action == "abort_race":
+        return {"command": "abortrace"}
+    if action == "all_spectate":
+        return {"command": "allspectate"}
+    if action == "camera_spectate":
+        return {"command": "cameramode", "mode": "spectate"}
+    if action == "camera_fpv":
+        return {"command": "cameramode", "mode": "fpv"}
+    if action == "camera_player":
+        if uid is None:
+            return None
+        return {"command": "cameraplayer", "uid": uid}
+    if action == "camera_select":
+        if camera_number is None:
+            return None
+        return {"command": "cameraselect", "number": camera_number}
+    if action == "camera_reset":
+        return {"command": "camerareset"}
+    return None
+
+
+def _to_int_or_none(value: Any) -> int | None:
+    try:
+        if value is None or value == "":
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None

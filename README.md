@@ -5,18 +5,22 @@ ZippyOVD is a Python/Django project for consuming Velocidrone race telemetry and
 ## Current scaffold
 
 - Django project + `race` app
+- Velocidrone websocket bridge (client thread):
+  - Connects to `ws://<machine-ip>:60003/velocidrone`
+  - Sends keepalive ping every 5 seconds
+  - Ingests events and builds race bug state from `racedata`
 - Admin page (`/race/admin/`) with:
   - Machine IP setting
   - Buttons: Start Race, Abort Race, All Spectate
-  - Camera actions: Spectate, Pilot Camera
+  - Camera actions: Spectate/FPV/Reset, Camera Select, Camera Player (UID)
 - Race bug page (`/race/bug/`) showing:
-  - Player name + color + lap
+  - Player name + color + lap + UID
   - Team scores (team = shared color)
 - API endpoints:
   - `GET/POST /race/api/config/`
-  - `POST /race/api/action/` (currently stubbed)
-  - `POST /race/api/telemetry/` (ingest telemetry JSON)
-  - `GET /race/api/state/` (normalized display state)
+  - `POST /race/api/action/`
+  - `POST /race/api/telemetry/` (manual fallback ingest)
+  - `GET /race/api/state/` (normalized display state + websocket status)
 
 ## Quick start
 

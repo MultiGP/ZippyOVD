@@ -56,6 +56,10 @@ button:hover {
     color: #aaa;
 }
 
+.top-gap {
+    margin-top: 8px;
+}
+
 .player-row,
 .team-row {
     display: flex;

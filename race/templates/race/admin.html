@@ -17,6 +17,7 @@
                 <button id="saveIp">Save IP</button>
             </div>
             <p id="ipStatus" class="muted"></p>
+            <p id="wsStatus" class="muted"></p>
         </section>
 
         <section class="card">
@@ -30,12 +31,19 @@
 
         <section class="card">
             <h2>Camera Actions</h2>
-            <div class="row">
-                <input id="pilotName" type="text" placeholder="Pilot name/id" />
-                <button data-action="spectate">Spectate</button>
-                <button data-action="pilot_camera">Pilot Camera</button>
+            <div class="row wrap">
+                <button data-action="camera_spectate">Camera Spectate</button>
+                <button data-action="camera_fpv">Camera FPV</button>
+                <button data-action="camera_reset">Camera Reset</button>
             </div>
-            <p class="muted">Pilot field is used for pilot_camera.</p>
+            <div class="row top-gap">
+                <input id="pilotUid" type="number" placeholder="Pilot UID" />
+                <button data-action="camera_player">Camera Player</button>
+            </div>
+            <div class="row top-gap">
+                <input id="cameraNumber" type="number" placeholder="Camera #" />
+                <button data-action="camera_select">Camera Select</button>
+            </div>
         </section>
 
         <section class="card">

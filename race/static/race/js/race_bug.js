@@ -16,7 +16,8 @@ function renderPlayers(players) {
         chip.className = 'color-chip';
         chip.style.backgroundColor = player.color;
         left.appendChild(chip);
-        left.appendChild(document.createTextNode(player.name));
+        const label = player.uid ? `${player.name} (UID ${player.uid})` : player.name;
+        left.appendChild(document.createTextNode(label));
 
         const right = document.createElement('div');
         right.textContent = `Lap ${player.lap}`;
@@ -63,6 +64,11 @@ async function refresh() {
         const data = await response.json();
         renderPlayers(data.players || []);
         renderTeams(data.teamScores || {});
+
+        const ws = data.ws || {};
+        const connected = ws.connected ? 'connected' : 'disconnected';
+        const error = ws.lastError ? ` | error: ${ws.lastError}` : '';
+        document.getElementById('wsState').textContent = `WebSocket: ${connected}${error}`;
     } catch (error) {
         console.error('Failed to refresh state', error);
     }

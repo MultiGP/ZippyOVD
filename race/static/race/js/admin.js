@@ -3,6 +3,11 @@ async function fetchConfig() {
     const data = await response.json();
     const input = document.getElementById('machineIp');
     input.value = data.machineIp || '';
+
+    const wsStatus = document.getElementById('wsStatus');
+    const connected = data.wsConnected ? 'connected' : 'disconnected';
+    const errorText = data.wsLastError ? ` | error: ${data.wsLastError}` : '';
+    wsStatus.textContent = `WebSocket: ${connected}${errorText}`;
 }
 
 async function saveIp() {
@@ -13,22 +18,43 @@ async function saveIp() {
         body: JSON.stringify({ machineIp }),
     });
     const data = await response.json();
-    document.getElementById('ipStatus').textContent = data.ok
-        ? `Saved machine IP: ${data.machineIp}`
-        : 'Failed to save machine IP';
+
+    if (data.ok) {
+        document.getElementById('ipStatus').textContent = `Saved machine IP: ${data.machineIp}`;
+    } else {
+        document.getElementById('ipStatus').textContent = 'Failed to save machine IP';
+    }
+
+    await fetchConfig();
 }
 
 async function sendAction(action) {
-    const pilot = document.getElementById('pilotName').value.trim();
+    const uidValue = document.getElementById('pilotUid').value.trim();
+    const numberValue = document.getElementById('cameraNumber').value.trim();
+
+    const requestPayload = { action };
+    if (uidValue !== '') {
+        requestPayload.uid = Number(uidValue);
+    }
+    if (numberValue !== '') {
+        requestPayload.number = Number(numberValue);
+    }
+
     const response = await fetch('/race/api/action/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, pilot }),
+        body: JSON.stringify(requestPayload),
     });
     const data = await response.json();
-    document.getElementById('actionStatus').textContent = data.ok
-        ? `Queued action: ${data.action}${data.pilot ? ` (${data.pilot})` : ''}`
-        : 'Action failed';
+
+    if (data.ok) {
+        const queuedState = data.queued ? 'sent' : 'not sent (socket offline)';
+        document.getElementById('actionStatus').textContent = `Action ${data.action}: ${queuedState}`;
+    } else {
+        document.getElementById('actionStatus').textContent = data.error || 'Action failed';
+    }
+
+    await fetchConfig();
 }
 
 function bindEvents() {
@@ -44,3 +70,4 @@ function bindEvents() {
 
 fetchConfig();
 bindEvents();
+setInterval(fetchConfig, 5000);
