@@ -15,6 +15,7 @@ _current_state: dict[str, Any] = {
 }
 _uid_laps: dict[str, int] = {}
 _completed_team_scores: dict[str, int] = {}
+_player_meta_by_name: dict[str, dict[str, str]] = {}
 
 
 def set_machine_ip(machine_ip: str) -> None:
@@ -58,6 +59,18 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
         for key, value in event.items():
             raw[key] = value
 
+        player_update = event.get("player", {})
+        if isinstance(player_update, dict):
+            player_name = str(player_update.get("PlayerName", "")).strip()
+            if player_name:
+                color = _normalize_color(str(player_update.get("playerColour", "#888888")))
+                meta = _player_meta_by_name.get(player_name, {})
+                _player_meta_by_name[player_name] = {
+                    "name": player_name,
+                    "color": color if color else meta.get("color", "#888888"),
+                    "uid": str(meta.get("uid", "")).strip(),
+                }
+
         race_status = raw.get("racestatus", {})
         if isinstance(race_status, dict):
             race_action = str(race_status.get("raceAction", "")).strip().lower()
@@ -66,7 +79,7 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                 _completed_team_scores.clear()
 
         racedata = raw.get("racedata", {})
-        players: list[dict[str, Any]] = []
+        race_rows: dict[str, dict[str, Any]] = {}
         team_scores: dict[str, int] = {}
 
         if isinstance(racedata, dict):
@@ -74,22 +87,28 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                 if not isinstance(details, dict):
                     continue
 
+                normalized_name = str(player_name)
                 color = _normalize_color(str(details.get("colour", "#888888")))
                 lap = _to_int(details.get("lap", 0))
                 uid = str(details.get("uid", "")).strip()
                 gate = _to_int(details.get("gate", 0))
 
-                players.append(
-                    {
-                        "name": str(player_name),
-                        "color": color,
-                        "lap": lap,
-                        "gate": gate,
-                        "uid": uid,
-                    }
-                )
+                race_rows[normalized_name] = {
+                    "name": normalized_name,
+                    "color": color,
+                    "lap": lap,
+                    "gate": gate,
+                    "uid": uid,
+                }
 
                 team_scores[color] = team_scores.get(color, 0) + lap
+
+                meta = _player_meta_by_name.get(normalized_name, {})
+                _player_meta_by_name[normalized_name] = {
+                    "name": normalized_name,
+                    "color": color,
+                    "uid": uid if uid else str(meta.get("uid", "")).strip(),
+                }
 
                 if uid:
                     previous_lap = _uid_laps.get(uid, 0)
@@ -99,6 +118,23 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                         lap_gain = lap - previous_lap
                         _completed_team_scores[color] = _completed_team_scores.get(color, 0) + lap_gain
                     _uid_laps[uid] = lap
+
+        players: list[dict[str, Any]] = list(race_rows.values())
+
+        for player_name, meta in _player_meta_by_name.items():
+            if player_name in race_rows:
+                continue
+            players.append(
+                {
+                    "name": player_name,
+                    "color": _normalize_color(str(meta.get("color", "#888888"))),
+                    "lap": 0,
+                    "gate": 0,
+                    "uid": str(meta.get("uid", "")).strip(),
+                }
+            )
+
+        players.sort(key=lambda row: row.get("name", "").lower())
 
         _current_state = {
             "players": players,

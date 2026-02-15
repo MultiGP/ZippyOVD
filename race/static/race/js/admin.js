@@ -2,11 +2,8 @@ function setPilotButtons(players) {
     const container = document.getElementById('pilotCameraButtons');
     container.innerHTML = '';
 
-    const validPlayers = (players || []).filter((player) => {
-        return Boolean(player.uid);
-    });
-
-    if (!validPlayers.length) {
+    const allPlayers = players || [];
+    if (!allPlayers.length) {
         const empty = document.createElement('span');
         empty.className = 'muted';
         empty.textContent = 'No pilots available yet.';
@@ -14,13 +11,21 @@ function setPilotButtons(players) {
         return;
     }
 
-    validPlayers.forEach((player) => {
+    allPlayers.forEach((player) => {
         const button = document.createElement('button');
         button.type = 'button';
-        button.textContent = `${player.name} (UID ${player.uid})`;
-        button.addEventListener('click', () => {
-            sendAction('camera_player', { uid: Number(player.uid) });
-        });
+
+        if (player.uid) {
+            button.textContent = `${player.name} (UID ${player.uid})`;
+            button.addEventListener('click', () => {
+                sendAction('camera_player', { uid: Number(player.uid) });
+            });
+        } else {
+            button.textContent = `${player.name} (UID pending)`;
+            button.disabled = true;
+            button.title = 'UID not available yet from racedata';
+        }
+
         container.appendChild(button);
     });
 }
