@@ -1,4 +1,5 @@
 import json
+import socket
 import threading
 import time
 from typing import Any, Optional
@@ -138,7 +139,7 @@ class VelocidroneClient:
                     ingest_velocidrone_event(parsed)
                     with self._lock:
                         self._last_message_ts = time.time()
-            except (TimeoutError, WebSocketTimeoutException):
+            except (TimeoutError, socket.timeout, WebSocketTimeoutException):
                 continue
             except json.JSONDecodeError:
                 continue
