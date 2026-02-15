@@ -10,9 +10,12 @@ class RaceConfig(AppConfig):
 
     def ready(self) -> None:
         # Django runserver with autoreload starts a parent + child process.
-        # Only start the Velocidrone client in the serving child process.
-        if "runserver" in sys.argv and os.environ.get("RUN_MAIN") != "true":
-            return
+        # Only skip parent when autoreload is enabled.
+        if "runserver" in sys.argv:
+            run_main = os.environ.get("RUN_MAIN")
+            no_reload = "--noreload" in sys.argv
+            if run_main != "true" and not no_reload:
+                return
 
         from .state import get_machine_ip
         from .velocidrone import client
