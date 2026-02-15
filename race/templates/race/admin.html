@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZippyOVD Admin</title>
+    <link rel="stylesheet" href="/static/race/css/style.css" />
+</head>
+<body>
+    <main class="container">
+        <h1>ZippyOVD Admin</h1>
+
+        <section class="card">
+            <h2>Velocidrone Host</h2>
+            <div class="row">
+                <input id="machineIp" type="text" placeholder="e.g. 192.168.1.50" />
+                <button id="saveIp">Save IP</button>
+            </div>
+            <p id="ipStatus" class="muted"></p>
+        </section>
+
+        <section class="card">
+            <h2>Race Controls</h2>
+            <div class="row wrap">
+                <button data-action="start_race">Start Race</button>
+                <button data-action="abort_race">Abort Race</button>
+                <button data-action="all_spectate">All Spectate</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Camera Actions</h2>
+            <div class="row">
+                <input id="pilotName" type="text" placeholder="Pilot name/id" />
+                <button data-action="spectate">Spectate</button>
+                <button data-action="pilot_camera">Pilot Camera</button>
+            </div>
+            <p class="muted">Pilot field is used for pilot_camera.</p>
+        </section>
+
+        <section class="card">
+            <h2>Race Bug</h2>
+            <a href="/race/bug/" target="_blank">Open Race Bug Page</a>
+        </section>
+
+        <p id="actionStatus"></p>
+    </main>
+
+    <script src="/static/race/js/admin.js"></script>
+</body>
+</html>
