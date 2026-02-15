@@ -17,8 +17,9 @@ function setPilotButtons(players) {
 
         if (player.uid) {
             button.textContent = `${player.name} (UID ${player.uid})`;
-            button.addEventListener('click', () => {
-                sendAction('camera_player', { uid: Number(player.uid) });
+            button.addEventListener('click', async () => {
+                await sendAction('camera_spectate', {}, false);
+                await sendAction('camera_player', { uid: String(player.uid) }, true);
             });
         } else {
             button.textContent = `${player.name} (UID pending)`;
@@ -86,7 +87,7 @@ async function saveIp() {
     }
 }
 
-async function sendAction(action, extraPayload = {}) {
+async function sendAction(action, extraPayload = {}, refreshAfter = true) {
     const requestPayload = { action, ...extraPayload };
 
     const response = await fetch('/race/api/action/', {
@@ -103,7 +104,9 @@ async function sendAction(action, extraPayload = {}) {
         document.getElementById('actionStatus').textContent = data.error || 'Action failed';
     }
 
-    await fetchConfig();
+    if (refreshAfter) {
+        await fetchConfig();
+    }
 }
 
 function bindEvents() {
