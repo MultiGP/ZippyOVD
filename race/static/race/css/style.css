@@ -79,6 +79,10 @@ button:hover {
     margin-right: 8px;
 }
 
+.overlay-title {
+    font-size: 1.1rem;
+}
+
 body.compact {
     background: transparent;
 }
