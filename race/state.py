@@ -72,12 +72,6 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
 
         player_update = event.get("player", {})
         if isinstance(player_update, dict):
-            print(f"[Velocidrone] PlayerDataChange: {json.dumps(player_update, ensure_ascii=False)}", flush=True)
-            if not player_update:
-                print(
-                    f"[Velocidrone] Empty player payload. Full event: {json.dumps(event, ensure_ascii=False)}",
-                    flush=True,
-                )
             player_name = str(player_update.get("PlayerName", "")).strip()
             if player_name:
                 color = _normalize_color(str(player_update.get("playerColour", "")))
