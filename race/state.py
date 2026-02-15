@@ -59,15 +59,26 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
         for key, value in event.items():
             raw[key] = value
 
+        session_update = event.get("session", {})
+        if isinstance(session_update, dict):
+            session_player_name = str(session_update.get("playerName", "")).strip()
+            if session_player_name:
+                meta = _player_meta_by_name.get(session_player_name, {})
+                _player_meta_by_name[session_player_name] = {
+                    "name": session_player_name,
+                    "color": str(meta.get("color", "")).strip(),
+                    "uid": str(meta.get("uid", "")).strip(),
+                }
+
         player_update = event.get("player", {})
         if isinstance(player_update, dict):
             player_name = str(player_update.get("PlayerName", "")).strip()
             if player_name:
-                color = _normalize_color(str(player_update.get("playerColour", "#888888")))
+                color = _normalize_color(str(player_update.get("playerColour", "")))
                 meta = _player_meta_by_name.get(player_name, {})
                 _player_meta_by_name[player_name] = {
                     "name": player_name,
-                    "color": color if color else meta.get("color", "#888888"),
+                    "color": color if color else str(meta.get("color", "")).strip(),
                     "uid": str(meta.get("uid", "")).strip(),
                 }
 
@@ -88,7 +99,7 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                     continue
 
                 normalized_name = str(player_name)
-                color = _normalize_color(str(details.get("colour", "#888888")))
+                color = _normalize_color(str(details.get("colour", "")))
                 lap = _to_int(details.get("lap", 0))
                 uid = str(details.get("uid", "")).strip()
                 gate = _to_int(details.get("gate", 0))
@@ -101,7 +112,8 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                     "uid": uid,
                 }
 
-                team_scores[color] = team_scores.get(color, 0) + lap
+                if color:
+                    team_scores[color] = team_scores.get(color, 0) + lap
 
                 meta = _player_meta_by_name.get(normalized_name, {})
                 _player_meta_by_name[normalized_name] = {
@@ -127,7 +139,7 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
             players.append(
                 {
                     "name": player_name,
-                    "color": _normalize_color(str(meta.get("color", "#888888"))),
+                    "color": _normalize_color(str(meta.get("color", ""))),
                     "lap": 0,
                     "gate": 0,
                     "uid": str(meta.get("uid", "")).strip(),
@@ -151,7 +163,7 @@ def normalize_state(payload: dict[str, Any]) -> dict[str, Any]:
 
     for entry in players:
         name = str(entry.get("name", "Unknown"))
-        color = _normalize_color(str(entry.get("color", "#888888")))
+        color = _normalize_color(str(entry.get("color", "")))
         lap = _to_int(entry.get("lap", 0))
         uid = str(entry.get("uid", "")).strip()
         gate = _to_int(entry.get("gate", 0))
@@ -165,7 +177,8 @@ def normalize_state(payload: dict[str, Any]) -> dict[str, Any]:
                 "uid": uid,
             }
         )
-        team_scores[color] = team_scores.get(color, 0) + lap
+        if color:
+            team_scores[color] = team_scores.get(color, 0) + lap
 
     return {
         "players": normalized_players,
@@ -176,11 +189,13 @@ def normalize_state(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _normalize_color(value: str) -> str:
     cleaned = value.strip()
+    if not cleaned:
+        return ""
     if cleaned.startswith("#"):
         return cleaned
     if len(cleaned) in (6, 8):
         return f"#{cleaned}"
-    return "#888888"
+    return ""
 
 
 def _to_int(value: Any) -> int:

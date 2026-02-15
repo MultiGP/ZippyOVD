@@ -14,10 +14,12 @@ function renderPlayers(players) {
         row.className = 'player-row';
 
         const left = document.createElement('div');
-        const chip = document.createElement('span');
-        chip.className = 'color-chip';
-        chip.style.backgroundColor = player.color;
-        left.appendChild(chip);
+        if (player.color) {
+            const chip = document.createElement('span');
+            chip.className = 'color-chip';
+            chip.style.backgroundColor = player.color;
+            left.appendChild(chip);
+        }
         const label = player.uid ? `${player.name} (UID ${player.uid})` : player.name;
         left.appendChild(document.createTextNode(label));
 
