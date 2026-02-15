@@ -1,4 +1,5 @@
 let teamMode = 'sum';
+let stream = null;
 
 function renderPlayers(players) {
     const container = document.getElementById('players');
@@ -85,20 +86,29 @@ function setMode(mode) {
     window.history.replaceState({}, '', nextUrl);
 }
 
-async function refresh() {
-    try {
-        const response = await fetch(`/race/api/state/?teamMode=${encodeURIComponent(teamMode)}`);
-        const data = await response.json();
-        renderPlayers(data.players || []);
-        renderTeams(data.teamScores || {});
+function applyState(data) {
+    renderPlayers(data.players || []);
+    renderTeams(data.teamScores || {});
 
-        const ws = data.ws || {};
-        const connected = ws.connected ? 'connected' : 'disconnected';
-        const error = ws.lastError ? ` | error: ${ws.lastError}` : '';
-        document.getElementById('wsState').textContent = `WebSocket: ${connected}${error}`;
-    } catch (error) {
-        console.error('Failed to refresh state', error);
+    const ws = data.ws || {};
+    const connected = ws.connected ? 'connected' : 'disconnected';
+    const error = ws.lastError ? ` | error: ${ws.lastError}` : '';
+    document.getElementById('wsState').textContent = `WebSocket: ${connected}${error}`;
+}
+
+function connectStream() {
+    if (stream) {
+        stream.close();
     }
+
+    stream = new EventSource(`/race/api/stream/?teamMode=${encodeURIComponent(teamMode)}`);
+    stream.addEventListener('state', (event) => {
+        const data = JSON.parse(event.data);
+        applyState(data);
+    });
+    stream.onerror = () => {
+        document.getElementById('wsState').textContent = 'State stream disconnected; retrying...';
+    };
 }
 
 function bindEvents() {
@@ -109,11 +119,10 @@ function bindEvents() {
 
     select.addEventListener('change', () => {
         setMode(select.value);
-        refresh();
+        connectStream();
     });
 }
 
 syncModeFromUrl();
 bindEvents();
-refresh();
-setInterval(refresh, 1000);
+connectStream();

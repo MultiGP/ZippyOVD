@@ -10,4 +10,5 @@ urlpatterns = [
     path("race/api/action/", views.api_action, name="api_action"),
     path("race/api/telemetry/", views.api_telemetry, name="api_telemetry"),
     path("race/api/state/", views.api_state, name="api_state"),
+    path("race/api/stream/", views.api_stream, name="api_stream"),
 ]

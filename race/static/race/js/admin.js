@@ -31,31 +31,43 @@ function setPilotButtons(players) {
 }
 
 let suppressIpRefreshUntil = 0;
+let stream = null;
 
-async function fetchConfig() {
-    const response = await fetch('/race/api/config/');
-    const data = await response.json();
+function applyState(data) {
     const input = document.getElementById('machineIp');
-
     const now = Date.now();
     const isTypingIp = document.activeElement === input;
     if (!isTypingIp && now >= suppressIpRefreshUntil) {
-        input.value = data.machineIp || '';
+        input.value = (data.ws && data.ws.machineIp) || '';
     }
 
+    const ws = data.ws || {};
     const wsStatus = document.getElementById('wsStatus');
-    const connected = data.wsConnected ? 'connected' : 'disconnected';
-    const worker = data.wsWorkerAlive ? 'worker:alive' : 'worker:dead';
-    const messageAge = data.wsLastMessageTs
-        ? Math.floor(Date.now() / 1000 - Number(data.wsLastMessageTs))
+    const connected = ws.connected ? 'connected' : 'disconnected';
+    const worker = ws.workerAlive ? 'worker:alive' : 'worker:dead';
+    const messageAge = ws.lastMessageTs
+        ? Math.floor(Date.now() / 1000 - Number(ws.lastMessageTs))
         : null;
     const ageText = messageAge === null ? ' | no messages yet' : ` | last message ${messageAge}s ago`;
-    const errorText = data.wsLastError ? ` | error: ${data.wsLastError}` : '';
+    const errorText = ws.lastError ? ` | error: ${ws.lastError}` : '';
     wsStatus.textContent = `WebSocket: ${connected} | ${worker}${ageText}${errorText}`;
 
-    const stateResponse = await fetch('/race/api/state/');
-    const stateData = await stateResponse.json();
-    setPilotButtons(stateData.players || []);
+    setPilotButtons(data.players || []);
+}
+
+function connectStream() {
+    if (stream) {
+        stream.close();
+    }
+
+    stream = new EventSource('/race/api/stream/?teamMode=sum');
+    stream.addEventListener('state', (event) => {
+        const data = JSON.parse(event.data);
+        applyState(data);
+    });
+    stream.onerror = () => {
+        document.getElementById('wsStatus').textContent = 'WebSocket status stream disconnected; retrying...';
+    };
 }
 
 async function saveIp() {
@@ -79,14 +91,12 @@ async function saveIp() {
         } else {
             document.getElementById('ipStatus').textContent = 'Failed to save machine IP';
         }
-
-        await fetchConfig();
     } catch (error) {
         document.getElementById('ipStatus').textContent = `Failed to save machine IP: ${error}`;
     }
 }
 
-async function sendAction(action, extraPayload = {}, refreshAfter = true) {
+async function sendAction(action, extraPayload = {}) {
     const requestPayload = { action, ...extraPayload };
 
     const response = await fetch('/race/api/action/', {
@@ -101,10 +111,6 @@ async function sendAction(action, extraPayload = {}, refreshAfter = true) {
         document.getElementById('actionStatus').textContent = `Action ${data.action}: ${queuedState}`;
     } else {
         document.getElementById('actionStatus').textContent = data.error || 'Action failed';
-    }
-
-    if (refreshAfter) {
-        await fetchConfig();
     }
 }
 
@@ -129,6 +135,5 @@ function bindEvents() {
     });
 }
 
-fetchConfig();
 bindEvents();
-setInterval(fetchConfig, 5000);
+connectStream();

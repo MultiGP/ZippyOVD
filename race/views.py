@@ -1,7 +1,8 @@
 import json
+import time
 from typing import Any, Optional
 
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
@@ -91,13 +92,43 @@ def api_telemetry(request: HttpRequest) -> JsonResponse:
 
 
 def api_state(request: HttpRequest) -> JsonResponse:
+    score_mode = _parse_score_mode(request)
+    return JsonResponse(_build_state(score_mode))
+
+
+def api_stream(request: HttpRequest) -> StreamingHttpResponse:
+    score_mode = _parse_score_mode(request)
+
+    def event_generator() -> Any:
+        last_payload = ""
+        last_heartbeat_ts = 0.0
+
+        while True:
+            state = _build_state(score_mode)
+            serialized = json.dumps(state, separators=(",", ":"), sort_keys=True)
+
+            if serialized != last_payload:
+                yield f"event: state\ndata: {serialized}\n\n"
+                last_payload = serialized
+                last_heartbeat_ts = time.time()
+            else:
+                now = time.time()
+                if now - last_heartbeat_ts >= 15.0:
+                    yield ": keepalive\n\n"
+                    last_heartbeat_ts = now
+
+            time.sleep(0.25)
+
+    response = StreamingHttpResponse(event_generator(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+def _build_state(score_mode: str) -> dict[str, Any]:
     ws_state = get_current_state()
     fallback_state = normalize_state(get_payload())
     status = client.status()
-
-    score_mode = str(request.GET.get("teamMode", "sum")).strip().lower()
-    if score_mode not in {"sum", "completed"}:
-        score_mode = "sum"
 
     if ws_state.get("players"):
         merged = ws_state
@@ -118,9 +149,16 @@ def api_state(request: HttpRequest) -> JsonResponse:
         "lastError": status.get("lastError", ""),
         "lastMessageTs": status.get("lastMessageTs", 0),
         "machineIp": status.get("machineIp", ""),
+        "workerAlive": status.get("workerAlive", False),
     }
+    return merged
 
-    return JsonResponse(merged)
+
+def _parse_score_mode(request: HttpRequest) -> str:
+    score_mode = str(request.GET.get("teamMode", "sum")).strip().lower()
+    if score_mode not in {"sum", "completed"}:
+        return "sum"
+    return score_mode
 
 
 def _json_body(request: HttpRequest) -> dict[str, Any]:
