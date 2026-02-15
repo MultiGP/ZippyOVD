@@ -17,9 +17,8 @@ function setPilotButtons(players) {
 
         if (player.uid) {
             button.textContent = `${player.name} (UID ${player.uid})`;
-            button.addEventListener('click', async () => {
-                await sendAction('camera_spectate', {}, false);
-                await sendAction('camera_player', { uid: String(player.uid) }, true);
+            button.addEventListener('click', () => {
+                sendAction('camera_player', { uid: String(player.uid) });
             });
         } else {
             button.textContent = `${player.name} (UID pending)`;
