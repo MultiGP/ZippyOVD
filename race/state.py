@@ -77,12 +77,14 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                 color = _normalize_color(str(details.get("colour", "#888888")))
                 lap = _to_int(details.get("lap", 0))
                 uid = str(details.get("uid", "")).strip()
+                gate = _to_int(details.get("gate", 0))
 
                 players.append(
                     {
                         "name": str(player_name),
                         "color": color,
                         "lap": lap,
+                        "gate": gate,
                         "uid": uid,
                     }
                 )
@@ -116,12 +118,14 @@ def normalize_state(payload: dict[str, Any]) -> dict[str, Any]:
         color = _normalize_color(str(entry.get("color", "#888888")))
         lap = _to_int(entry.get("lap", 0))
         uid = str(entry.get("uid", "")).strip()
+        gate = _to_int(entry.get("gate", 0))
 
         normalized_players.append(
             {
                 "name": name,
                 "color": color,
                 "lap": lap,
+                "gate": gate,
                 "uid": uid,
             }
         )

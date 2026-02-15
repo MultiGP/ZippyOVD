@@ -22,7 +22,9 @@ function renderPlayers(players) {
         left.appendChild(document.createTextNode(label));
 
         const right = document.createElement('div');
-        right.textContent = `Lap ${player.lap}`;
+        const lap = Number(player.lap || 0);
+        const gate = Number(player.gate || 0);
+        right.textContent = `Lap: ${lap} Gate: ${gate}`;
 
         row.appendChild(left);
         row.appendChild(right);
