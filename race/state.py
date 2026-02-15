@@ -1,7 +1,10 @@
+import json
+from pathlib import Path
 from threading import Lock
 from typing import Any
 
 _lock = Lock()
+_CONFIG_PATH = Path(__file__).resolve().parent.parent / "race_config.json"
 _machine_ip = ""
 _last_payload: dict[str, Any] = {"players": []}
 _current_state: dict[str, Any] = {
@@ -18,6 +21,7 @@ def set_machine_ip(machine_ip: str) -> None:
     global _machine_ip
     with _lock:
         _machine_ip = machine_ip.strip()
+        _save_config_locked()
 
 
 def get_machine_ip() -> str:
@@ -144,3 +148,28 @@ def _to_int(value: Any) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _save_config_locked() -> None:
+    try:
+        payload = {"machineIp": _machine_ip}
+        _CONFIG_PATH.write_text(json.dumps(payload), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _load_config() -> None:
+    global _machine_ip
+
+    try:
+        if not _CONFIG_PATH.exists():
+            return
+
+        parsed = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
+        if isinstance(parsed, dict):
+            _machine_ip = str(parsed.get("machineIp", "")).strip()
+    except (OSError, json.JSONDecodeError):
+        return
+
+
+_load_config()
