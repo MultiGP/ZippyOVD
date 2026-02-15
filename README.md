@@ -13,9 +13,12 @@ ZippyOVD is a Python/Django project for consuming Velocidrone race telemetry and
   - Machine IP setting
   - Buttons: Start Race, Abort Race, All Spectate
   - Camera actions: Spectate/FPV/Reset, Camera Select, Camera Player (UID)
+  - Pilot UID dropdown populated from live racedata
 - Race bug page (`/race/bug/`) showing:
   - Player name + color + lap + UID
   - Team scores (team = shared color)
+  - Score mode toggle: `sum` vs `completed` lap increments
+  - Compact overlay mode: `/race/bug/?compact=1`
 - API endpoints:
   - `GET/POST /race/api/config/`
   - `POST /race/api/action/`

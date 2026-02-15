@@ -7,8 +7,11 @@ _last_payload: dict[str, Any] = {"players": []}
 _current_state: dict[str, Any] = {
     "players": [],
     "teamScores": {},
+    "teamScoresCompleted": {},
     "raw": {},
 }
+_uid_laps: dict[str, int] = {}
+_completed_team_scores: dict[str, int] = {}
 
 
 def set_machine_ip(machine_ip: str) -> None:
@@ -38,6 +41,7 @@ def get_current_state() -> dict[str, Any]:
         return {
             "players": list(_current_state.get("players", [])),
             "teamScores": dict(_current_state.get("teamScores", {})),
+            "teamScoresCompleted": dict(_current_state.get("teamScoresCompleted", {})),
             "raw": dict(_current_state.get("raw", {})),
         }
 
@@ -49,6 +53,13 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
         raw = dict(_current_state.get("raw", {}))
         for key, value in event.items():
             raw[key] = value
+
+        race_status = raw.get("racestatus", {})
+        if isinstance(race_status, dict):
+            race_action = str(race_status.get("raceAction", "")).strip().lower()
+            if race_action in {"started", "aborted", "finished", "reset"}:
+                _uid_laps.clear()
+                _completed_team_scores.clear()
 
         racedata = raw.get("racedata", {})
         players: list[dict[str, Any]] = []
@@ -71,11 +82,22 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                         "uid": uid,
                     }
                 )
+
                 team_scores[color] = team_scores.get(color, 0) + lap
+
+                if uid:
+                    previous_lap = _uid_laps.get(uid, 0)
+                    if lap < previous_lap:
+                        previous_lap = 0
+                    if lap > previous_lap:
+                        lap_gain = lap - previous_lap
+                        _completed_team_scores[color] = _completed_team_scores.get(color, 0) + lap_gain
+                    _uid_laps[uid] = lap
 
         _current_state = {
             "players": players,
             "teamScores": team_scores,
+            "teamScoresCompleted": dict(_completed_team_scores),
             "raw": raw,
         }
 
@@ -104,6 +126,7 @@ def normalize_state(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "players": normalized_players,
         "teamScores": team_scores,
+        "teamScoresCompleted": {},
     }
 
 

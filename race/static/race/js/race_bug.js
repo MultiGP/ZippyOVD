@@ -1,3 +1,5 @@
+let teamMode = 'sum';
+
 function renderPlayers(players) {
     const container = document.getElementById('players');
     container.innerHTML = '';
@@ -58,9 +60,30 @@ function renderTeams(teamScores) {
     });
 }
 
+function syncModeFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('teamMode');
+    if (mode === 'completed' || mode === 'sum') {
+        teamMode = mode;
+    }
+
+    const select = document.getElementById('teamMode');
+    if (select) {
+        select.value = teamMode;
+    }
+}
+
+function setMode(mode) {
+    teamMode = mode === 'completed' ? 'completed' : 'sum';
+    const params = new URLSearchParams(window.location.search);
+    params.set('teamMode', teamMode);
+    const nextUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', nextUrl);
+}
+
 async function refresh() {
     try {
-        const response = await fetch('/race/api/state/');
+        const response = await fetch(`/race/api/state/?teamMode=${encodeURIComponent(teamMode)}`);
         const data = await response.json();
         renderPlayers(data.players || []);
         renderTeams(data.teamScores || {});
@@ -74,5 +97,19 @@ async function refresh() {
     }
 }
 
+function bindEvents() {
+    const select = document.getElementById('teamMode');
+    if (!select) {
+        return;
+    }
+
+    select.addEventListener('change', () => {
+        setMode(select.value);
+        refresh();
+    });
+}
+
+syncModeFromUrl();
+bindEvents();
 refresh();
 setInterval(refresh, 1000);

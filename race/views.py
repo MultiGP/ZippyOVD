@@ -25,7 +25,8 @@ def race_admin(request: HttpRequest) -> HttpResponse:
 
 
 def race_bug(request: HttpRequest) -> HttpResponse:
-    return render(request, "race/race_bug.html")
+    compact = str(request.GET.get("compact", "0")).strip().lower() in {"1", "true", "yes"}
+    return render(request, "race/race_bug.html", {"compact": compact})
 
 
 def api_config(request: HttpRequest) -> JsonResponse:
@@ -91,15 +92,24 @@ def api_state(request: HttpRequest) -> JsonResponse:
     fallback_state = normalize_state(get_payload())
     status = client.status()
 
+    score_mode = str(request.GET.get("teamMode", "sum")).strip().lower()
+    if score_mode not in {"sum", "completed"}:
+        score_mode = "sum"
+
     if ws_state.get("players"):
         merged = ws_state
     else:
         merged = {
             "players": fallback_state.get("players", []),
             "teamScores": fallback_state.get("teamScores", {}),
+            "teamScoresCompleted": fallback_state.get("teamScoresCompleted", {}),
             "raw": {},
         }
 
+    if score_mode == "completed":
+        merged["teamScores"] = dict(merged.get("teamScoresCompleted", {}))
+
+    merged["scoreMode"] = score_mode
     merged["ws"] = {
         "connected": status.get("connected", False),
         "lastError": status.get("lastError", ""),

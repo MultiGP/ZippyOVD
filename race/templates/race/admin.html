@@ -37,7 +37,7 @@
                 <button data-action="camera_reset">Camera Reset</button>
             </div>
             <div class="row top-gap">
-                <input id="pilotUid" type="number" placeholder="Pilot UID" />
+                <select id="pilotUid"></select>
                 <button data-action="camera_player">Camera Player</button>
             </div>
             <div class="row top-gap">
@@ -48,7 +48,10 @@
 
         <section class="card">
             <h2>Race Bug</h2>
-            <a href="/race/bug/" target="_blank">Open Race Bug Page</a>
+            <div class="stack">
+                <a href="/race/bug/" target="_blank">Open Race Bug Page</a>
+                <a href="/race/bug/?compact=1" target="_blank">Open Compact Overlay Mode</a>
+            </div>
         </section>
 
         <p id="actionStatus"></p>

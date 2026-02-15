@@ -6,9 +6,20 @@
     <title>ZippyOVD Race Bug</title>
     <link rel="stylesheet" href="/static/race/css/style.css" />
 </head>
-<body class="bug-page">
+<body class="bug-page{% if compact %} compact{% endif %}">
     <main class="container">
         <h1>Race Bug</h1>
+
+        <section class="card" id="overlayOptions">
+            <h2>Overlay Options</h2>
+            <div class="row">
+                <label for="teamMode">Team Score Mode</label>
+                <select id="teamMode">
+                    <option value="sum">Sum of current laps</option>
+                    <option value="completed">Completed lap increments</option>
+                </select>
+            </div>
+        </section>
 
         <section class="card">
             <h2>Players</h2>

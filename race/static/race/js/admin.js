@@ -1,3 +1,29 @@
+function setPilotOptions(players) {
+    const select = document.getElementById('pilotUid');
+    const current = select.value;
+    select.innerHTML = '';
+
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select pilot UID';
+    select.appendChild(placeholder);
+
+    (players || []).forEach((player) => {
+        if (!player.uid) {
+            return;
+        }
+
+        const option = document.createElement('option');
+        option.value = String(player.uid);
+        option.textContent = `${player.name} (UID ${player.uid})`;
+        select.appendChild(option);
+    });
+
+    if (current) {
+        select.value = current;
+    }
+}
+
 async function fetchConfig() {
     const response = await fetch('/race/api/config/');
     const data = await response.json();
@@ -8,6 +34,10 @@ async function fetchConfig() {
     const connected = data.wsConnected ? 'connected' : 'disconnected';
     const errorText = data.wsLastError ? ` | error: ${data.wsLastError}` : '';
     wsStatus.textContent = `WebSocket: ${connected}${errorText}`;
+
+    const stateResponse = await fetch('/race/api/state/');
+    const stateData = await stateResponse.json();
+    setPilotOptions(stateData.players || []);
 }
 
 async function saveIp() {
