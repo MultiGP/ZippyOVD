@@ -24,11 +24,18 @@ function setPilotOptions(players) {
     }
 }
 
+let suppressIpRefreshUntil = 0;
+
 async function fetchConfig() {
     const response = await fetch('/race/api/config/');
     const data = await response.json();
     const input = document.getElementById('machineIp');
-    input.value = data.machineIp || '';
+
+    const now = Date.now();
+    const isTypingIp = document.activeElement === input;
+    if (!isTypingIp && now >= suppressIpRefreshUntil) {
+        input.value = data.machineIp || '';
+    }
 
     const wsStatus = document.getElementById('wsStatus');
     const connected = data.wsConnected ? 'connected' : 'disconnected';
@@ -89,6 +96,11 @@ async function sendAction(action) {
 
 function bindEvents() {
     document.getElementById('saveIp').addEventListener('click', saveIp);
+
+    const machineIpInput = document.getElementById('machineIp');
+    machineIpInput.addEventListener('input', () => {
+        suppressIpRefreshUntil = Date.now() + 10000;
+    });
 
     document.querySelectorAll('button[data-action]').forEach((button) => {
         button.addEventListener('click', () => {
