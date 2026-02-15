@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Optional
 
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -29,6 +29,7 @@ def race_bug(request: HttpRequest) -> HttpResponse:
     return render(request, "race/race_bug.html", {"compact": compact})
 
 
+@csrf_exempt
 def api_config(request: HttpRequest) -> JsonResponse:
     if request.method == "GET":
         status = client.status()
@@ -133,7 +134,7 @@ def _json_body(request: HttpRequest) -> dict[str, Any]:
     return {}
 
 
-def _build_command(action: str, uid: int | None, camera_number: int | None) -> dict[str, Any] | None:
+def _build_command(action: str, uid: Optional[int], camera_number: Optional[int]) -> Optional[dict[str, Any]]:
     if action == "start_race":
         return {"command": "startrace"}
     if action == "abort_race":
@@ -157,7 +158,7 @@ def _build_command(action: str, uid: int | None, camera_number: int | None) -> d
     return None
 
 
-def _to_int_or_none(value: Any) -> int | None:
+def _to_int_or_none(value: Any) -> Optional[int]:
     try:
         if value is None or value == "":
             return None

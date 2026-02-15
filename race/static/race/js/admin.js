@@ -49,20 +49,30 @@ async function fetchConfig() {
 
 async function saveIp() {
     const machineIp = document.getElementById('machineIp').value.trim();
-    const response = await fetch('/race/api/config/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ machineIp }),
-    });
-    const data = await response.json();
 
-    if (data.ok) {
-        document.getElementById('ipStatus').textContent = `Saved machine IP: ${data.machineIp}`;
-    } else {
-        document.getElementById('ipStatus').textContent = 'Failed to save machine IP';
+    try {
+        const response = await fetch('/race/api/config/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ machineIp }),
+        });
+
+        if (!response.ok) {
+            document.getElementById('ipStatus').textContent = `Failed to save machine IP (HTTP ${response.status})`;
+            return;
+        }
+
+        const data = await response.json();
+        if (data.ok) {
+            document.getElementById('ipStatus').textContent = `Saved machine IP: ${data.machineIp}`;
+        } else {
+            document.getElementById('ipStatus').textContent = 'Failed to save machine IP';
+        }
+
+        await fetchConfig();
+    } catch (error) {
+        document.getElementById('ipStatus').textContent = `Failed to save machine IP: ${error}`;
     }
-
-    await fetchConfig();
 }
 
 async function sendAction(action) {
