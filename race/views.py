@@ -38,6 +38,8 @@ def api_config(request: HttpRequest) -> JsonResponse:
                 "machineIp": get_machine_ip(),
                 "wsConnected": status.get("connected", False),
                 "wsLastError": status.get("lastError", ""),
+                "wsWorkerAlive": status.get("workerAlive", False),
+                "wsLastMessageTs": status.get("lastMessageTs", 0),
             }
         )
 

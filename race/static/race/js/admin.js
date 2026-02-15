@@ -39,8 +39,13 @@ async function fetchConfig() {
 
     const wsStatus = document.getElementById('wsStatus');
     const connected = data.wsConnected ? 'connected' : 'disconnected';
+    const worker = data.wsWorkerAlive ? 'worker:alive' : 'worker:dead';
+    const messageAge = data.wsLastMessageTs
+        ? Math.floor(Date.now() / 1000 - Number(data.wsLastMessageTs))
+        : null;
+    const ageText = messageAge === null ? ' | no messages yet' : ` | last message ${messageAge}s ago`;
     const errorText = data.wsLastError ? ` | error: ${data.wsLastError}` : '';
-    wsStatus.textContent = `WebSocket: ${connected}${errorText}`;
+    wsStatus.textContent = `WebSocket: ${connected} | ${worker}${ageText}${errorText}`;
 
     const stateResponse = await fetch('/race/api/state/');
     const stateData = await stateResponse.json();

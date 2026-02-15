@@ -1,9 +1,9 @@
 import json
 import threading
 import time
-from typing import Any
+from typing import Any, Optional
 
-from websocket import WebSocket, WebSocketConnectionClosedException, create_connection
+from websocket import WebSocket, WebSocketConnectionClosedException, WebSocketTimeoutException, create_connection
 
 from .state import ingest_velocidrone_event
 
@@ -11,10 +11,10 @@ from .state import ingest_velocidrone_event
 class VelocidroneClient:
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._ws: WebSocket | None = None
+        self._ws: Optional[WebSocket] = None
         self._machine_ip = ""
         self._running = False
-        self._thread: threading.Thread | None = None
+        self._thread: Optional[threading.Thread] = None
         self._connected = False
         self._last_error = ""
         self._last_message_ts = 0.0
@@ -63,11 +63,13 @@ class VelocidroneClient:
 
     def status(self) -> dict[str, Any]:
         with self._lock:
+            worker_alive = self._thread.is_alive() if self._thread is not None else False
             return {
                 "machineIp": self._machine_ip,
                 "connected": self._connected,
                 "lastError": self._last_error,
                 "lastMessageTs": self._last_message_ts,
+                "workerAlive": worker_alive,
             }
 
     def _set_connected(self, value: bool) -> None:
@@ -136,11 +138,15 @@ class VelocidroneClient:
                     ingest_velocidrone_event(parsed)
                     with self._lock:
                         self._last_message_ts = time.time()
-            except TimeoutError:
+            except (TimeoutError, WebSocketTimeoutException):
                 continue
             except json.JSONDecodeError:
                 continue
             except (WebSocketConnectionClosedException, OSError) as error:
+                self._set_connected(False)
+                self._set_error(str(error))
+                time.sleep(reconnect_delay_seconds)
+            except Exception as error:
                 self._set_connected(False)
                 self._set_error(str(error))
                 time.sleep(reconnect_delay_seconds)
