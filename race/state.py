@@ -104,12 +104,16 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                 uid = str(details.get("uid", "")).strip()
                 gate = _to_int(details.get("gate", 0))
 
+                finished_value = str(details.get("finished", "")).strip().lower()
+                is_finished = finished_value in {"true", "1", "yes"}
+
                 race_rows[normalized_name] = {
                     "name": normalized_name,
                     "color": color,
                     "lap": lap,
                     "gate": gate,
                     "uid": uid,
+                    "finished": is_finished,
                 }
 
                 if color:
@@ -143,6 +147,7 @@ def ingest_velocidrone_event(event: dict[str, Any]) -> None:
                     "lap": 0,
                     "gate": 0,
                     "uid": str(meta.get("uid", "")).strip(),
+                    "finished": False,
                 }
             )
 
@@ -168,6 +173,8 @@ def normalize_state(payload: dict[str, Any]) -> dict[str, Any]:
         uid = str(entry.get("uid", "")).strip()
         gate = _to_int(entry.get("gate", 0))
 
+        finished = bool(entry.get("finished", False))
+
         normalized_players.append(
             {
                 "name": name,
@@ -175,6 +182,7 @@ def normalize_state(payload: dict[str, Any]) -> dict[str, Any]:
                 "lap": lap,
                 "gate": gate,
                 "uid": uid,
+                "finished": finished,
             }
         )
         if color:

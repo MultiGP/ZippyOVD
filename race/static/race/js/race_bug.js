@@ -21,7 +21,9 @@ function renderPlayers(players) {
             chip.style.backgroundColor = player.color;
             left.appendChild(chip);
         }
-        const label = player.uid ? `${player.name} (UID ${player.uid})` : player.name;
+        const flag = player.finished ? ' 🏁' : '';
+        const baseLabel = player.uid ? `${player.name} (UID ${player.uid})` : player.name;
+        const label = `${baseLabel}${flag}`;
         left.appendChild(document.createTextNode(label));
 
         const right = document.createElement('div');
