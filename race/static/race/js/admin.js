@@ -87,11 +87,11 @@ function hasPendingFileSelection() {
     });
 }
 
-async function fetchLogos() {
+async function fetchLogos(forceRender = false) {
     const response = await fetch('/race/api/logos/');
     logoData = await response.json();
 
-    if (hasPendingFileSelection()) {
+    if (!forceRender && hasPendingFileSelection()) {
         return;
     }
 
@@ -172,7 +172,7 @@ async function assignLogo(teamColor, logoId) {
     }
 
     document.getElementById('actionStatus').textContent = `Updated logo assignment for ${teamColor}.`;
-    await fetchLogos();
+    await fetchLogos(true);
 }
 
 async function uploadLogo(teamColor, fileInput) {
@@ -199,7 +199,7 @@ async function uploadLogo(teamColor, fileInput) {
 
     fileInput.value = '';
     document.getElementById('actionStatus').textContent = `Uploaded logo and assigned to ${teamColor}.`;
-    await fetchLogos();
+    await fetchLogos(true);
 }
 
 async function deleteLogo(logoId) {
@@ -214,7 +214,7 @@ async function deleteLogo(logoId) {
     }
 
     document.getElementById('actionStatus').textContent = 'Deleted unused logo.';
-    await fetchLogos();
+    await fetchLogos(true);
 }
 
 function renderTeamLogoManager() {
