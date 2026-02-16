@@ -71,6 +71,35 @@ button:hover {
     padding: 8px 10px;
 }
 
+.player-left,
+.team-left {
+    display: flex;
+    align-items: center;
+    min-height: 24px;
+}
+
+.player-stats {
+    display: flex;
+    align-items: flex-end;
+    padding-top: 4px;
+}
+
+.team-score-wrap {
+    text-align: right;
+}
+
+.team-score-label {
+    font-size: 11px;
+    color: #bdbdbd;
+    line-height: 1;
+}
+
+.team-score-value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.05;
+}
+
 .color-chip {
     width: 12px;
     height: 12px;
@@ -193,7 +222,19 @@ body.compact .team-row {
     font-size: 14px;
 }
 
+body.compact .player-stats {
+    padding-top: 8px;
+}
+
 body.compact .team-logo-inline {
     width: 54px;
     height: 54px;
+}
+
+body.compact .team-score-label {
+    font-size: 12px;
+}
+
+body.compact .team-score-value {
+    font-size: 30px;
 }

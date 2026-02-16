@@ -1,5 +1,6 @@
 let teamMode = 'sum';
 let stream = null;
+const isCompact = document.body.classList.contains('compact');
 
 function renderPlayers(players, teamLogos) {
     const container = document.getElementById('players');
@@ -15,6 +16,7 @@ function renderPlayers(players, teamLogos) {
         row.className = 'player-row';
 
         const left = document.createElement('div');
+        left.className = 'player-left';
         if (player.color) {
             const chip = document.createElement('span');
             chip.className = 'color-chip';
@@ -31,11 +33,15 @@ function renderPlayers(players, teamLogos) {
         }
 
         const flag = player.finished ? ' 🏁' : '';
-        const baseLabel = player.uid ? `${player.name} (UID ${player.uid})` : player.name;
+        let baseLabel = player.name;
+        if (!isCompact && player.uid) {
+            baseLabel = `${player.name} (UID ${player.uid})`;
+        }
         const label = `${baseLabel}${flag}`;
         left.appendChild(document.createTextNode(label));
 
         const right = document.createElement('div');
+        right.className = 'player-stats';
         const lap = Number(player.lap || 0);
         const gate = Number(player.gate || 0);
         right.textContent = `Lap: ${lap} Gate: ${gate}`;
@@ -61,6 +67,7 @@ function renderTeams(teamScores, teamLogos) {
         row.className = 'team-row';
 
         const left = document.createElement('div');
+        left.className = 'team-left';
         const chip = document.createElement('span');
         chip.className = 'color-chip';
         chip.style.backgroundColor = color;
@@ -75,10 +82,23 @@ function renderTeams(teamScores, teamLogos) {
             left.appendChild(logo);
         }
 
-        left.appendChild(document.createTextNode(`Team ${color}`));
+        if (!isCompact) {
+            left.appendChild(document.createTextNode(`Team ${color}`));
+        }
 
         const right = document.createElement('div');
-        right.textContent = String(teamScores[color]);
+        right.className = 'team-score-wrap';
+
+        const scoreLabel = document.createElement('div');
+        scoreLabel.className = 'team-score-label';
+        scoreLabel.textContent = 'Total Laps';
+
+        const scoreValue = document.createElement('div');
+        scoreValue.className = 'team-score-value';
+        scoreValue.textContent = String(teamScores[color]);
+
+        right.appendChild(scoreLabel);
+        right.appendChild(scoreValue);
 
         row.appendChild(left);
         row.appendChild(right);
