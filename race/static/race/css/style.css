@@ -200,9 +200,9 @@ body.compact {
 }
 
 body.compact .container {
-    max-width: 300px;
+    max-width: 260px;
     margin: 0;
-    padding: 6px;
+    padding: 4px;
 }
 
 body.compact h1,
