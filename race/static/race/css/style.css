@@ -85,14 +85,14 @@ button:hover {
 
 .team-score-inline {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 8px;
     white-space: nowrap;
 }
 
 .team-score-label {
-    font-size: 11px;
-    color: #bdbdbd;
+    font-size: inherit;
+    color: inherit;
     line-height: 1;
 }
 
@@ -232,10 +232,6 @@ body.compact .player-stats {
 body.compact .team-logo-inline {
     width: 54px;
     height: 54px;
-}
-
-body.compact .team-score-label {
-    font-size: 12px;
 }
 
 body.compact .team-score-value {
