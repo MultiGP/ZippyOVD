@@ -57,7 +57,6 @@ function applyState(data) {
     wsStatus.textContent = `WebSocket: ${connected} | ${worker}${ageText}${errorText}`;
 
     setPilotButtons(data.players || []);
-    renderTeamLogoManager();
 }
 
 function connectStream() {
@@ -135,17 +134,18 @@ async function assignLogo(teamColor, logoId) {
 
     const data = await response.json();
     if (!response.ok) {
-        alert(data.error || 'Failed to assign logo');
+        document.getElementById('actionStatus').textContent = data.error || 'Failed to assign logo';
         return;
     }
 
+    document.getElementById('actionStatus').textContent = `Updated logo assignment for ${teamColor}.`;
     await fetchLogos();
 }
 
 async function uploadLogo(teamColor, fileInput) {
     const file = fileInput.files && fileInput.files[0];
     if (!file) {
-        alert('Select a PNG/JPG file first.');
+        document.getElementById('actionStatus').textContent = 'Select a PNG/JPG file first, then click Upload.';
         return;
     }
 
@@ -160,11 +160,12 @@ async function uploadLogo(teamColor, fileInput) {
     const data = await response.json();
 
     if (!response.ok) {
-        alert(data.error || 'Failed to upload logo');
+        document.getElementById('actionStatus').textContent = data.error || 'Failed to upload logo';
         return;
     }
 
     fileInput.value = '';
+    document.getElementById('actionStatus').textContent = `Uploaded logo and assigned to ${teamColor}.`;
     await fetchLogos();
 }
 
@@ -175,10 +176,11 @@ async function deleteLogo(logoId) {
     const data = await response.json();
 
     if (!response.ok) {
-        alert(data.error || 'Failed to delete logo');
+        document.getElementById('actionStatus').textContent = data.error || 'Failed to delete logo';
         return;
     }
 
+    document.getElementById('actionStatus').textContent = 'Deleted unused logo.';
     await fetchLogos();
 }
 
