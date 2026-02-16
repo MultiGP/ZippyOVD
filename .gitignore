@@ -5,3 +5,8 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+
+# runtime/local state
+race_config.json
+team_logo_store.json
+team_logos/
