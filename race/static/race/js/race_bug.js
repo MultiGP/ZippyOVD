@@ -1,7 +1,7 @@
 let teamMode = 'sum';
 let stream = null;
 
-function renderPlayers(players) {
+function renderPlayers(players, teamLogos) {
     const container = document.getElementById('players');
     container.innerHTML = '';
 
@@ -21,6 +21,15 @@ function renderPlayers(players) {
             chip.style.backgroundColor = player.color;
             left.appendChild(chip);
         }
+        const logoUrl = (teamLogos && player.color) ? teamLogos[player.color] : '';
+        if (logoUrl) {
+            const logo = document.createElement('img');
+            logo.className = 'team-logo-inline';
+            logo.src = logoUrl;
+            logo.alt = 'Team logo';
+            left.appendChild(logo);
+        }
+
         const flag = player.finished ? ' 🏁' : '';
         const baseLabel = player.uid ? `${player.name} (UID ${player.uid})` : player.name;
         const label = `${baseLabel}${flag}`;
@@ -37,7 +46,7 @@ function renderPlayers(players) {
     });
 }
 
-function renderTeams(teamScores) {
+function renderTeams(teamScores, teamLogos) {
     const container = document.getElementById('teams');
     container.innerHTML = '';
 
@@ -56,6 +65,16 @@ function renderTeams(teamScores) {
         chip.className = 'color-chip';
         chip.style.backgroundColor = color;
         left.appendChild(chip);
+
+        const logoUrl = teamLogos ? teamLogos[color] : '';
+        if (logoUrl) {
+            const logo = document.createElement('img');
+            logo.className = 'team-logo-inline';
+            logo.src = logoUrl;
+            logo.alt = 'Team logo';
+            left.appendChild(logo);
+        }
+
         left.appendChild(document.createTextNode(`Team ${color}`));
 
         const right = document.createElement('div');
@@ -89,8 +108,9 @@ function setMode(mode) {
 }
 
 function applyState(data) {
-    renderPlayers(data.players || []);
-    renderTeams(data.teamScores || {});
+    const teamLogos = data.teamLogos || {};
+    renderPlayers(data.players || [], teamLogos);
+    renderTeams(data.teamScores || {}, teamLogos);
 
     const ws = data.ws || {};
     const connected = ws.connected ? 'connected' : 'disconnected';

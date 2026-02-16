@@ -2,10 +2,11 @@ import json
 import time
 from typing import Any, Optional
 
-from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
+from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
+from .logo_store import assign_logo, delete_logo, get_team_logo_urls, list_data, resolve_logo_path, upload_logo
 from .state import (
     get_current_state,
     get_machine_ip,
@@ -125,6 +126,66 @@ def api_stream(request: HttpRequest) -> StreamingHttpResponse:
     return response
 
 
+@csrf_exempt
+def api_logos(request: HttpRequest) -> JsonResponse:
+    if request.method != "GET":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    discovered_colors = _extract_discovered_team_colors(_build_state("sum"))
+    return JsonResponse(list_data(discovered_colors))
+
+
+@csrf_exempt
+def api_logo_upload(request: HttpRequest) -> JsonResponse:
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    file_obj = request.FILES.get("file")
+    team_color = str(request.POST.get("teamColor", "")).strip()
+
+    try:
+        result = upload_logo(file_obj, team_color)
+        return JsonResponse({"ok": True, **result})
+    except ValueError as error:
+        return JsonResponse({"error": str(error)}, status=400)
+
+
+@csrf_exempt
+def api_logo_assign(request: HttpRequest) -> JsonResponse:
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    data = _json_body(request)
+    team_color = str(data.get("teamColor", "")).strip()
+    logo_id = str(data.get("logoId", "")).strip()
+
+    try:
+        assign_logo(team_color, logo_id)
+        return JsonResponse({"ok": True})
+    except ValueError as error:
+        return JsonResponse({"error": str(error)}, status=400)
+
+
+@csrf_exempt
+def api_logo_delete(request: HttpRequest, logo_id: str) -> JsonResponse:
+    if request.method != "DELETE":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    try:
+        delete_logo(logo_id)
+        return JsonResponse({"ok": True})
+    except ValueError as error:
+        return JsonResponse({"error": str(error)}, status=400)
+
+
+def api_logo_file(request: HttpRequest, logo_id: str) -> HttpResponse:
+    file_path = resolve_logo_path(logo_id)
+    if file_path is None:
+        return JsonResponse({"error": "Logo not found"}, status=404)
+
+    return FileResponse(file_path.open("rb"))
+
+
 def _build_state(score_mode: str) -> dict[str, Any]:
     ws_state = get_current_state()
     fallback_state = normalize_state(get_payload())
@@ -143,6 +204,9 @@ def _build_state(score_mode: str) -> dict[str, Any]:
     if score_mode == "completed":
         merged["teamScores"] = dict(merged.get("teamScoresCompleted", {}))
 
+    discovered_colors = _extract_discovered_team_colors(merged)
+    merged["teamLogos"] = get_team_logo_urls(discovered_colors)
+
     merged["scoreMode"] = score_mode
     merged["ws"] = {
         "connected": status.get("connected", False),
@@ -152,6 +216,28 @@ def _build_state(score_mode: str) -> dict[str, Any]:
         "workerAlive": status.get("workerAlive", False),
     }
     return merged
+
+
+def _extract_discovered_team_colors(state: dict[str, Any]) -> list[str]:
+    colors: set[str] = set()
+
+    team_scores = state.get("teamScores", {})
+    if isinstance(team_scores, dict):
+        for key in team_scores.keys():
+            color = str(key).strip()
+            if color:
+                colors.add(color)
+
+    players = state.get("players", [])
+    if isinstance(players, list):
+        for player in players:
+            if not isinstance(player, dict):
+                continue
+            color = str(player.get("color", "")).strip()
+            if color:
+                colors.add(color)
+
+    return sorted(colors)
 
 
 def _parse_score_mode(request: HttpRequest) -> str:

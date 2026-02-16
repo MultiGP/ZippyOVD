@@ -1,3 +1,8 @@
+let suppressIpRefreshUntil = 0;
+let stream = null;
+let latestState = null;
+let logoData = { teams: [], logos: [], teamAssignments: {} };
+
 function setPilotButtons(players) {
     const container = document.getElementById('pilotCameraButtons');
     container.innerHTML = '';
@@ -30,10 +35,9 @@ function setPilotButtons(players) {
     });
 }
 
-let suppressIpRefreshUntil = 0;
-let stream = null;
-
 function applyState(data) {
+    latestState = data;
+
     const input = document.getElementById('machineIp');
     const now = Date.now();
     const isTypingIp = document.activeElement === input;
@@ -53,6 +57,7 @@ function applyState(data) {
     wsStatus.textContent = `WebSocket: ${connected} | ${worker}${ageText}${errorText}`;
 
     setPilotButtons(data.players || []);
+    renderTeamLogoManager();
 }
 
 function connectStream() {
@@ -68,6 +73,13 @@ function connectStream() {
     stream.onerror = () => {
         document.getElementById('wsStatus').textContent = 'WebSocket status stream disconnected; retrying...';
     };
+}
+
+async function fetchLogos() {
+    const response = await fetch('/race/api/logos/');
+    logoData = await response.json();
+    renderTeamLogoManager();
+    renderStoredLogos();
 }
 
 async function saveIp() {
@@ -114,6 +126,206 @@ async function sendAction(action, extraPayload = {}) {
     }
 }
 
+async function assignLogo(teamColor, logoId) {
+    const response = await fetch('/race/api/logos/assign/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamColor, logoId }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+        alert(data.error || 'Failed to assign logo');
+        return;
+    }
+
+    await fetchLogos();
+}
+
+async function uploadLogo(teamColor, fileInput) {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+        alert('Select a PNG/JPG file first.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('teamColor', teamColor);
+
+    const response = await fetch('/race/api/logos/upload/', {
+        method: 'POST',
+        body: formData,
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || 'Failed to upload logo');
+        return;
+    }
+
+    fileInput.value = '';
+    await fetchLogos();
+}
+
+async function deleteLogo(logoId) {
+    const response = await fetch(`/race/api/logos/${encodeURIComponent(logoId)}/`, {
+        method: 'DELETE',
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+        alert(data.error || 'Failed to delete logo');
+        return;
+    }
+
+    await fetchLogos();
+}
+
+function renderTeamLogoManager() {
+    const container = document.getElementById('teamLogoManager');
+    if (!container) {
+        return;
+    }
+
+    const discovered = new Set();
+    ((latestState && latestState.players) || []).forEach((player) => {
+        if (player.color) {
+            discovered.add(player.color);
+        }
+    });
+    Object.keys(((latestState && latestState.teamScores) || {})).forEach((color) => {
+        if (color) {
+            discovered.add(color);
+        }
+    });
+
+    const teamColors = Array.from(discovered).sort();
+    container.innerHTML = '';
+
+    if (!teamColors.length) {
+        const empty = document.createElement('span');
+        empty.className = 'muted';
+        empty.textContent = 'No teams discovered yet.';
+        container.appendChild(empty);
+        return;
+    }
+
+    teamColors.forEach((teamColor) => {
+        const row = document.createElement('div');
+        row.className = 'team-logo-row';
+
+        const colorBlock = document.createElement('div');
+        colorBlock.className = 'row';
+
+        const chip = document.createElement('span');
+        chip.className = 'color-chip';
+        chip.style.backgroundColor = teamColor;
+
+        const label = document.createElement('span');
+        label.textContent = `Team ${teamColor}`;
+
+        colorBlock.appendChild(chip);
+        colorBlock.appendChild(label);
+
+        const assignedLogoId = (logoData.teamAssignments || {})[teamColor] || '';
+        const logoUrl = assignedLogoId ? `/race/api/logos/file/${assignedLogoId}/` : '';
+        const preview = document.createElement('img');
+        preview.className = 'team-logo-preview';
+        preview.alt = 'Team logo';
+        if (logoUrl) {
+            preview.src = logoUrl;
+        } else {
+            preview.style.visibility = 'hidden';
+        }
+
+        const select = document.createElement('select');
+        const noneOption = document.createElement('option');
+        noneOption.value = '';
+        noneOption.textContent = '(No logo)';
+        select.appendChild(noneOption);
+        (logoData.logos || []).forEach((logo) => {
+            const option = document.createElement('option');
+            option.value = logo.id;
+            option.textContent = logo.name;
+            select.appendChild(option);
+        });
+        select.value = assignedLogoId;
+
+        const assignButton = document.createElement('button');
+        assignButton.type = 'button';
+        assignButton.textContent = 'Assign';
+        assignButton.addEventListener('click', () => {
+            assignLogo(teamColor, select.value);
+        });
+
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.png,.jpg,.jpeg,image/png,image/jpeg';
+
+        const uploadButton = document.createElement('button');
+        uploadButton.type = 'button';
+        uploadButton.textContent = 'Upload';
+        uploadButton.addEventListener('click', () => {
+            uploadLogo(teamColor, fileInput);
+        });
+
+        row.appendChild(colorBlock);
+        row.appendChild(preview);
+        row.appendChild(select);
+        row.appendChild(assignButton);
+        row.appendChild(fileInput);
+        row.appendChild(uploadButton);
+
+        container.appendChild(row);
+    });
+}
+
+function renderStoredLogos() {
+    const container = document.getElementById('storedLogoManager');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '';
+    const logos = logoData.logos || [];
+
+    if (!logos.length) {
+        const empty = document.createElement('span');
+        empty.className = 'muted';
+        empty.textContent = 'No stored logos yet.';
+        container.appendChild(empty);
+        return;
+    }
+
+    logos.forEach((logo) => {
+        const row = document.createElement('div');
+        row.className = 'stored-logo-row';
+
+        const preview = document.createElement('img');
+        preview.className = 'team-logo-preview';
+        preview.src = logo.url;
+        preview.alt = logo.name;
+
+        const name = document.createElement('span');
+        name.textContent = logo.name;
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.textContent = logo.inUse ? 'In use' : 'Delete';
+        deleteButton.disabled = Boolean(logo.inUse);
+        deleteButton.addEventListener('click', () => {
+            deleteLogo(logo.id);
+        });
+
+        row.appendChild(preview);
+        row.appendChild(name);
+        row.appendChild(deleteButton);
+
+        container.appendChild(row);
+    });
+}
+
 function bindEvents() {
     document.getElementById('saveIp').addEventListener('click', saveIp);
 
@@ -137,3 +349,5 @@ function bindEvents() {
 
 bindEvents();
 connectStream();
+fetchLogos();
+setInterval(fetchLogos, 15000);
