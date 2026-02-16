@@ -192,3 +192,8 @@ body.compact .team-row {
     padding: 6px 8px;
     font-size: 14px;
 }
+
+body.compact .team-logo-inline {
+    width: 54px;
+    height: 54px;
+}
