@@ -74,9 +74,20 @@ function connectStream() {
     };
 }
 
+function hasPendingFileSelection() {
+    return Array.from(document.querySelectorAll('#teamLogoManager input[type="file"]')).some((input) => {
+        return input.files && input.files.length > 0;
+    });
+}
+
 async function fetchLogos() {
     const response = await fetch('/race/api/logos/');
     logoData = await response.json();
+
+    if (hasPendingFileSelection()) {
+        return;
+    }
+
     renderTeamLogoManager();
     renderStoredLogos();
 }
