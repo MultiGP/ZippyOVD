@@ -80,12 +80,14 @@ button:hover {
 
 .player-stats {
     display: flex;
-    align-items: flex-end;
-    padding-top: 4px;
+    align-items: center;
 }
 
-.team-score-wrap {
-    text-align: right;
+.team-score-inline {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    white-space: nowrap;
 }
 
 .team-score-label {
@@ -198,9 +200,9 @@ body.compact {
 }
 
 body.compact .container {
-    max-width: 420px;
+    max-width: 300px;
     margin: 0;
-    padding: 8px;
+    padding: 6px;
 }
 
 body.compact h1,
@@ -218,12 +220,13 @@ body.compact .card {
 
 body.compact .player-row,
 body.compact .team-row {
-    padding: 6px 8px;
-    font-size: 14px;
+    padding: 5px 6px;
+    font-size: 13px;
+    gap: 8px;
 }
 
 body.compact .player-stats {
-    padding-top: 8px;
+    align-items: center;
 }
 
 body.compact .team-logo-inline {

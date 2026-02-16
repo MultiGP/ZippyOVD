@@ -33,9 +33,14 @@ function renderPlayers(players, teamLogos) {
         }
 
         const flag = player.finished ? ' 🏁' : '';
-        let baseLabel = player.name;
+        let displayName = player.name;
+        if (isCompact && displayName.length > 10) {
+            displayName = `${displayName.slice(0, 10)}…`;
+        }
+
+        let baseLabel = displayName;
         if (!isCompact && player.uid) {
-            baseLabel = `${player.name} (UID ${player.uid})`;
+            baseLabel = `${displayName} (UID ${player.uid})`;
         }
         const label = `${baseLabel}${flag}`;
         left.appendChild(document.createTextNode(label));
@@ -87,13 +92,13 @@ function renderTeams(teamScores, teamLogos) {
         }
 
         const right = document.createElement('div');
-        right.className = 'team-score-wrap';
+        right.className = 'team-score-inline';
 
-        const scoreLabel = document.createElement('div');
+        const scoreLabel = document.createElement('span');
         scoreLabel.className = 'team-score-label';
         scoreLabel.textContent = 'Total Laps';
 
-        const scoreValue = document.createElement('div');
+        const scoreValue = document.createElement('span');
         scoreValue.className = 'team-score-value';
         scoreValue.textContent = String(teamScores[color]);
 
