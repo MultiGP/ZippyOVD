@@ -2,6 +2,7 @@ let suppressIpRefreshUntil = 0;
 let stream = null;
 let latestState = null;
 let logoData = { teams: [], logos: [], teamAssignments: {} };
+let lastTeamSignature = '';
 
 function setPilotButtons(players) {
     const container = document.getElementById('pilotCameraButtons');
@@ -57,6 +58,12 @@ function applyState(data) {
     wsStatus.textContent = `WebSocket: ${connected} | ${worker}${ageText}${errorText}`;
 
     setPilotButtons(data.players || []);
+
+    const teamSignature = getDiscoveredTeamColors(data).join('|');
+    if (teamSignature !== lastTeamSignature && !hasPendingFileSelection()) {
+        lastTeamSignature = teamSignature;
+        renderTeamLogoManager();
+    }
 }
 
 function connectStream() {
@@ -90,6 +97,21 @@ async function fetchLogos() {
 
     renderTeamLogoManager();
     renderStoredLogos();
+}
+
+function getDiscoveredTeamColors(state) {
+    const discovered = new Set();
+    ((state && state.players) || []).forEach((player) => {
+        if (player.color) {
+            discovered.add(player.color);
+        }
+    });
+    Object.keys(((state && state.teamScores) || {})).forEach((color) => {
+        if (color) {
+            discovered.add(color);
+        }
+    });
+    return Array.from(discovered).sort();
 }
 
 async function saveIp() {
@@ -201,19 +223,8 @@ function renderTeamLogoManager() {
         return;
     }
 
-    const discovered = new Set();
-    ((latestState && latestState.players) || []).forEach((player) => {
-        if (player.color) {
-            discovered.add(player.color);
-        }
-    });
-    Object.keys(((latestState && latestState.teamScores) || {})).forEach((color) => {
-        if (color) {
-            discovered.add(color);
-        }
-    });
-
-    const teamColors = Array.from(discovered).sort();
+    const teamColors = getDiscoveredTeamColors(latestState);
+    lastTeamSignature = teamColors.join('|');
     container.innerHTML = '';
 
     if (!teamColors.length) {
@@ -363,4 +374,3 @@ function bindEvents() {
 bindEvents();
 connectStream();
 fetchLogos();
-setInterval(fetchLogos, 15000);
