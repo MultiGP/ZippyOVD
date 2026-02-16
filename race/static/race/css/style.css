@@ -113,6 +113,49 @@ button:hover {
     padding: 8px;
 }
 
+.logo-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.hidden {
+    display: none;
+}
+
+.logo-thumb-button {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    width: 96px;
+    min-height: 88px;
+    border: 1px solid #555;
+    background: #1b1b1b;
+}
+
+.logo-thumb-button.active {
+    border-color: #8bc34a;
+}
+
+.logo-thumb-image {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+}
+
+.logo-thumb-caption {
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: center;
+    max-width: 84px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 body.compact {
     background: transparent;
 }

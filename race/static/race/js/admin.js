@@ -263,24 +263,57 @@ function renderTeamLogoManager() {
             preview.style.visibility = 'hidden';
         }
 
-        const select = document.createElement('select');
-        const noneOption = document.createElement('option');
-        noneOption.value = '';
-        noneOption.textContent = '(No logo)';
-        select.appendChild(noneOption);
-        (logoData.logos || []).forEach((logo) => {
-            const option = document.createElement('option');
-            option.value = logo.id;
-            option.textContent = logo.name;
-            select.appendChild(option);
-        });
-        select.value = assignedLogoId;
-
         const assignButton = document.createElement('button');
         assignButton.type = 'button';
-        assignButton.textContent = 'Assign';
+        assignButton.textContent = 'Assign Existing Logo';
+
+        const clearButton = document.createElement('button');
+        clearButton.type = 'button';
+        clearButton.textContent = 'Clear Logo';
+        clearButton.addEventListener('click', () => {
+            assignLogo(teamColor, '');
+        });
+
+        const picker = document.createElement('div');
+        picker.className = 'logo-picker hidden';
+
+        const logos = logoData.logos || [];
+        if (!logos.length) {
+            const empty = document.createElement('span');
+            empty.className = 'muted';
+            empty.textContent = 'No stored logos yet.';
+            picker.appendChild(empty);
+        } else {
+            logos.forEach((logo) => {
+                const thumbButton = document.createElement('button');
+                thumbButton.type = 'button';
+                thumbButton.className = 'logo-thumb-button';
+                if (logo.id === assignedLogoId) {
+                    thumbButton.classList.add('active');
+                }
+                thumbButton.title = logo.name;
+
+                const thumb = document.createElement('img');
+                thumb.className = 'logo-thumb-image';
+                thumb.src = logo.url;
+                thumb.alt = logo.name;
+
+                const caption = document.createElement('span');
+                caption.className = 'logo-thumb-caption';
+                caption.textContent = logo.name;
+
+                thumbButton.appendChild(thumb);
+                thumbButton.appendChild(caption);
+                thumbButton.addEventListener('click', () => {
+                    assignLogo(teamColor, logo.id);
+                });
+
+                picker.appendChild(thumbButton);
+            });
+        }
+
         assignButton.addEventListener('click', () => {
-            assignLogo(teamColor, select.value);
+            picker.classList.toggle('hidden');
         });
 
         const fileInput = document.createElement('input');
@@ -296,10 +329,11 @@ function renderTeamLogoManager() {
 
         row.appendChild(colorBlock);
         row.appendChild(preview);
-        row.appendChild(select);
         row.appendChild(assignButton);
+        row.appendChild(clearButton);
         row.appendChild(fileInput);
         row.appendChild(uploadButton);
+        row.appendChild(picker);
 
         container.appendChild(row);
     });
