@@ -114,6 +114,16 @@ function getDiscoveredTeamColors(state) {
     return Array.from(discovered).sort();
 }
 
+function getVisibleTeamColors(state, assignments) {
+    const visible = new Set(getDiscoveredTeamColors(state));
+    Object.keys(assignments || {}).forEach((color) => {
+        if (color) {
+            visible.add(color);
+        }
+    });
+    return Array.from(visible).sort();
+}
+
 async function saveIp() {
     const machineIp = document.getElementById('machineIp').value.trim();
 
@@ -223,14 +233,16 @@ function renderTeamLogoManager() {
         return;
     }
 
-    const teamColors = getDiscoveredTeamColors(latestState);
+    const discoveredColors = getDiscoveredTeamColors(latestState);
+    const discoveredSet = new Set(discoveredColors);
+    const teamColors = getVisibleTeamColors(latestState, logoData.teamAssignments || {});
     lastTeamSignature = teamColors.join('|');
     container.innerHTML = '';
 
     if (!teamColors.length) {
         const empty = document.createElement('span');
         empty.className = 'muted';
-        empty.textContent = 'No teams discovered yet.';
+        empty.textContent = 'No teams discovered or assigned yet.';
         container.appendChild(empty);
         return;
     }
@@ -249,8 +261,13 @@ function renderTeamLogoManager() {
         const label = document.createElement('span');
         label.textContent = `Team ${teamColor}`;
 
+        const statusTag = document.createElement('span');
+        statusTag.className = 'team-source-tag';
+        statusTag.textContent = discoveredSet.has(teamColor) ? 'discovered' : 'assigned logo in use';
+
         colorBlock.appendChild(chip);
         colorBlock.appendChild(label);
+        colorBlock.appendChild(statusTag);
 
         const assignedLogoId = (logoData.teamAssignments || {})[teamColor] || '';
         const logoUrl = assignedLogoId ? `/race/api/logos/file/${assignedLogoId}/` : '';

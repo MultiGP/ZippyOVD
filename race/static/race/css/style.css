@@ -156,6 +156,14 @@ button:hover {
     text-overflow: ellipsis;
 }
 
+.team-source-tag {
+    font-size: 11px;
+    color: #b8b8b8;
+    border: 1px solid #4a4a4a;
+    border-radius: 999px;
+    padding: 1px 7px;
+}
+
 body.compact {
     background: transparent;
 }
